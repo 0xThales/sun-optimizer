@@ -4,9 +4,9 @@ import { Clock, Sparkles, AlertCircle } from "lucide-react"
 import { GlassCard } from "./ui/GlassCard"
 import {
   calculateOptimalTime,
-  formatTime,
   getRecommendedExposureTime,
 } from "@/lib/utils/calculations"
+import { formatTime } from "@/lib/utils/date"
 import { HourlyUV } from "@/types"
 import { cn } from "@/lib/utils/cn"
 

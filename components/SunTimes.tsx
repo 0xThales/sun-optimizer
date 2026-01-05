@@ -2,7 +2,8 @@
 
 import { Sunrise, Sunset, Sun, Clock } from 'lucide-react'
 import { GlassCard } from './ui/GlassCard'
-import { formatTime, formatDuration, calculateGoldenHour } from '@/lib/utils/calculations'
+import { formatDurationSeconds, calculateGoldenHour } from '@/lib/utils/calculations'
+import { formatTime } from '@/lib/utils/date'
 import { SunTimes as SunTimesType } from '@/types'
 
 interface SunTimesProps {
@@ -54,7 +55,7 @@ export function SunTimes({ sunTimes }: SunTimesProps) {
         <Clock className="w-4 h-4 text-white/60" />
         <span className="text-white/60 text-sm">Duración del día:</span>
         <span className="text-white font-medium text-sm">
-          {formatDuration(sunTimes.dayLength)}
+          {formatDurationSeconds(sunTimes.dayLength)}
         </span>
       </div>
 

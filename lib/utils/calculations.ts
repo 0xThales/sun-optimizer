@@ -10,6 +10,8 @@ import {
   SPF_RECOMMENDATIONS,
   PROTECTION_MESSAGES,
 } from "@/lib/constants"
+import { formatTime, formatDuration, getTimeDifferenceInMinutes, parseISOString } from "@/lib/utils/date"
+import { addHours } from "date-fns"
 
 /**
  * Get UV risk level from UV index value
@@ -160,110 +162,23 @@ export function calculateGoldenHour(
   eveningStart: Date
   eveningEnd: Date
 } {
-  const sunriseDate = new Date(sunrise)
-  const sunsetDate = new Date(sunset)
+  const sunriseDate = parseISOString(sunrise)
+  const sunsetDate = parseISOString(sunset)
 
   return {
     morningStart: sunriseDate,
-    morningEnd: new Date(sunriseDate.getTime() + 60 * 60 * 1000),
-    eveningStart: new Date(sunsetDate.getTime() - 60 * 60 * 1000),
+    morningEnd: addHours(sunriseDate, 1),
+    eveningStart: addHours(sunsetDate, -1),
     eveningEnd: sunsetDate,
   }
 }
 
 /**
- * Format duration in hours and minutes
+ * Format duration in hours and minutes (seconds version for backward compatibility)
  */
-export function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-
-  if (hours === 0) {
-    return `${minutes}m`
-  }
-
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-}
-
-/**
- * Format time from Date or ISO string
- * Always formats in the client's local timezone (browser timezone)
- */
-export function formatTime(dateInput: Date | string): string {
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "calculations.ts:169",
-      message: "formatTime entry",
-      data: {
-        input:
-          typeof dateInput === "string" ? dateInput : dateInput.toISOString(),
-        inputType: typeof dateInput,
-        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        isClient: typeof window !== "undefined",
-      },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "A,D",
-    }),
-  }).catch(() => {})
-  // #endregion
-  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput
-
-  // Get client timezone if available (browser), otherwise use server timezone
-  const timeZone =
-    typeof window !== "undefined"
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : undefined
-
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "calculations.ts:172",
-      message: "formatTime before toLocaleTimeString",
-      data: {
-        dateISO: date.toISOString(),
-        dateUTC: date.getUTCHours() + ":" + date.getUTCMinutes(),
-        dateLocal: date.getHours() + ":" + date.getMinutes(),
-        timezone: timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        isClient: typeof window !== "undefined",
-      },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "A,D",
-    }),
-  }).catch(() => {})
-  // #endregion
-
-  // Use client's timezone if available, otherwise use server timezone
-  const result = date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    ...(timeZone && { timeZone }),
-  })
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "calculations.ts:176",
-      message: "formatTime result",
-      data: { formatted: result, timezone: timeZone },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "A,D",
-    }),
-  }).catch(() => {})
-  // #endregion
-  return result
+export function formatDurationSeconds(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  return formatDuration(minutes)
 }
 
 /**
