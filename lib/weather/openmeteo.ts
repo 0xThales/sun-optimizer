@@ -45,11 +45,56 @@ export async function getWeatherData(
   )
 
   // Extract hourly UV data
+  // Note: Open-Meteo returns times in the location's timezone when using timezone: "auto"
+  // We preserve the ISO string and extract hour from the original timezone, not server timezone
   const hourlyUV = (data.hourly?.time || []).map((time, index) => {
+    // #region agent log
+    fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "openmeteo.ts:48",
+        message: "parsing hourly time",
+        data: {
+          timeString: time,
+          serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        timestamp: Date.now(),
+        sessionId: "debug-session",
+        runId: "run1",
+        hypothesisId: "B,C",
+      }),
+    }).catch(() => {})
+    // #endregion
     const date = new Date(time)
+    // Extract hour from the ISO string directly (preserves original timezone)
+    // Format: "2024-01-05T14:00:00+01:00" -> extract "14"
+    const hourMatch = time.match(/T(\d{2}):/)
+    const hour = hourMatch ? parseInt(hourMatch[1], 10) : date.getUTCHours()
+    // #region agent log
+    fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: "openmeteo.ts:50",
+        message: "date parsed and hour extracted",
+        data: {
+          dateISO: date.toISOString(),
+          hourUTC: date.getUTCHours(),
+          hourLocal: date.getHours(),
+          hourFromString: hour,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        timestamp: Date.now(),
+        sessionId: "debug-session",
+        runId: "run1",
+        hypothesisId: "B,C",
+      }),
+    }).catch(() => {})
+    // #endregion
     return {
       time: date.toISOString(),
-      hour: date.getHours(),
+      hour: hour,
       uv: data.hourly?.uv_index?.[index] || 0,
     }
   })

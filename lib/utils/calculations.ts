@@ -1,25 +1,25 @@
-import { 
-  UVRiskLevel, 
-  OptimalTimeRecommendation, 
+import {
+  UVRiskLevel,
+  OptimalTimeRecommendation,
   ProtectionRecommendation,
-  HourlyUV 
-} from '@/types'
-import { 
-  UV_THRESHOLDS, 
-  OPTIMAL_UV_RANGE, 
-  SPF_RECOMMENDATIONS, 
-  PROTECTION_MESSAGES 
-} from '@/lib/constants'
+  HourlyUV,
+} from "@/types"
+import {
+  UV_THRESHOLDS,
+  OPTIMAL_UV_RANGE,
+  SPF_RECOMMENDATIONS,
+  PROTECTION_MESSAGES,
+} from "@/lib/constants"
 
 /**
  * Get UV risk level from UV index value
  */
 export function getUVRiskLevel(uvIndex: number): UVRiskLevel {
-  if (uvIndex <= UV_THRESHOLDS.LOW.max) return 'low'
-  if (uvIndex <= UV_THRESHOLDS.MODERATE.max) return 'moderate'
-  if (uvIndex <= UV_THRESHOLDS.HIGH.max) return 'high'
-  if (uvIndex <= UV_THRESHOLDS.VERY_HIGH.max) return 'very-high'
-  return 'extreme'
+  if (uvIndex <= UV_THRESHOLDS.LOW.max) return "low"
+  if (uvIndex <= UV_THRESHOLDS.MODERATE.max) return "moderate"
+  if (uvIndex <= UV_THRESHOLDS.HIGH.max) return "high"
+  if (uvIndex <= UV_THRESHOLDS.VERY_HIGH.max) return "very-high"
+  return "extreme"
 }
 
 /**
@@ -27,11 +27,11 @@ export function getUVRiskLevel(uvIndex: number): UVRiskLevel {
  */
 export function getUVLevelName(level: UVRiskLevel): string {
   const names: Record<UVRiskLevel, string> = {
-    'low': 'Bajo',
-    'moderate': 'Moderado',
-    'high': 'Alto',
-    'very-high': 'Muy Alto',
-    'extreme': 'Extremo',
+    low: "Bajo",
+    moderate: "Moderado",
+    high: "Alto",
+    "very-high": "Muy Alto",
+    extreme: "Extremo",
   }
   return names[level]
 }
@@ -39,10 +39,12 @@ export function getUVLevelName(level: UVRiskLevel): string {
 /**
  * Get protection recommendations based on UV index
  */
-export function getProtectionRecommendation(uvIndex: number): ProtectionRecommendation {
+export function getProtectionRecommendation(
+  uvIndex: number
+): ProtectionRecommendation {
   const level = getUVRiskLevel(uvIndex)
   const message = PROTECTION_MESSAGES[level]
-  
+
   return {
     level,
     spfNeeded: SPF_RECOMMENDATIONS[level],
@@ -55,41 +57,42 @@ export function getProtectionRecommendation(uvIndex: number): ProtectionRecommen
  * Calculate optimal time window for sun exposure
  * Looks for times when UV is between 3-7 (good for Vitamin D without extreme risk)
  */
-export function calculateOptimalTime(hourlyUV: HourlyUV[]): OptimalTimeRecommendation | null {
+export function calculateOptimalTime(
+  hourlyUV: HourlyUV[]
+): OptimalTimeRecommendation | null {
   // Filter hours within optimal UV range
   const optimalHours = hourlyUV.filter(
-    h => h.uv >= OPTIMAL_UV_RANGE.min && h.uv <= OPTIMAL_UV_RANGE.max
+    (h) => h.uv >= OPTIMAL_UV_RANGE.min && h.uv <= OPTIMAL_UV_RANGE.max
   )
-
   if (optimalHours.length === 0) {
     // Check if all UV values are below optimal (morning/evening/winter)
-    const allLow = hourlyUV.every(h => h.uv < OPTIMAL_UV_RANGE.min)
-    
+    const allLow = hourlyUV.every((h) => h.uv < OPTIMAL_UV_RANGE.min)
+
     if (allLow && hourlyUV.length > 0) {
       // Find the hour with highest UV (best we can do)
-      const bestHour = hourlyUV.reduce((prev, curr) => 
+      const bestHour = hourlyUV.reduce((prev, curr) =>
         prev.uv > curr.uv ? prev : curr
       )
-      
+
       return {
         startTime: bestHour.time,
         endTime: bestHour.time,
         uvRange: { min: bestHour.uv, max: bestHour.uv },
-        reason: 'UV bajo hoy. Esta es la mejor hora disponible.',
+        reason: "UV bajo hoy. Esta es la mejor hora disponible.",
         duration: 30,
         isGoodForVitaminD: false,
       }
     }
-    
+
     return null
   }
 
   // Find continuous windows of optimal UV
   const windows: { start: number; end: number }[] = []
   let windowStart = 0
-  
+
   for (let i = 0; i < optimalHours.length; i++) {
-    if (i === 0 || optimalHours[i].hour !== optimalHours[i-1].hour + 1) {
+    if (i === 0 || optimalHours[i].hour !== optimalHours[i - 1].hour + 1) {
       if (i > 0) {
         windows.push({ start: windowStart, end: i - 1 })
       }
@@ -99,16 +102,38 @@ export function calculateOptimalTime(hourlyUV: HourlyUV[]): OptimalTimeRecommend
   windows.push({ start: windowStart, end: optimalHours.length - 1 })
 
   // Find the longest window
-  const longestWindow = windows.reduce((prev, curr) => 
-    (curr.end - curr.start) > (prev.end - prev.start) ? curr : prev
+  const longestWindow = windows.reduce((prev, curr) =>
+    curr.end - curr.start > prev.end - prev.start ? curr : prev
   )
 
   const startHour = optimalHours[longestWindow.start]
   const endHour = optimalHours[longestWindow.end]
-  
+
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "calculations.ts:109",
+      message: "calculateOptimalTime selected hours",
+      data: {
+        startHour: startHour.hour,
+        startTimeISO: startHour.time,
+        endHour: endHour.hour,
+        endTimeISO: endHour.time,
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "B,E",
+    }),
+  }).catch(() => {})
+  // #endregion
+
   const uvValues = optimalHours
     .slice(longestWindow.start, longestWindow.end + 1)
-    .map(h => h.uv)
+    .map((h) => h.uv)
 
   return {
     startTime: startHour.time,
@@ -117,7 +142,7 @@ export function calculateOptimalTime(hourlyUV: HourlyUV[]): OptimalTimeRecommend
       min: Math.min(...uvValues),
       max: Math.max(...uvValues),
     },
-    reason: 'UV óptimo para síntesis de vitamina D sin riesgo excesivo.',
+    reason: "UV óptimo para síntesis de vitamina D sin riesgo excesivo.",
     duration: (longestWindow.end - longestWindow.start + 1) * 60,
     isGoodForVitaminD: true,
   }
@@ -129,7 +154,12 @@ export function calculateOptimalTime(hourlyUV: HourlyUV[]): OptimalTimeRecommend
 export function calculateGoldenHour(
   sunrise: string,
   sunset: string
-): { morningStart: Date; morningEnd: Date; eveningStart: Date; eveningEnd: Date } {
+): {
+  morningStart: Date
+  morningEnd: Date
+  eveningStart: Date
+  eveningEnd: Date
+} {
   const sunriseDate = new Date(sunrise)
   const sunsetDate = new Date(sunset)
 
@@ -147,24 +177,93 @@ export function calculateGoldenHour(
 export function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
-  
+
   if (hours === 0) {
     return `${minutes}m`
   }
-  
+
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
 }
 
 /**
  * Format time from Date or ISO string
+ * Always formats in the client's local timezone (browser timezone)
  */
 export function formatTime(dateInput: Date | string): string {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
-  return date.toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "calculations.ts:169",
+      message: "formatTime entry",
+      data: {
+        input:
+          typeof dateInput === "string" ? dateInput : dateInput.toISOString(),
+        inputType: typeof dateInput,
+        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isClient: typeof window !== "undefined",
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A,D",
+    }),
+  }).catch(() => {})
+  // #endregion
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput
+
+  // Get client timezone if available (browser), otherwise use server timezone
+  const timeZone =
+    typeof window !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : undefined
+
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "calculations.ts:172",
+      message: "formatTime before toLocaleTimeString",
+      data: {
+        dateISO: date.toISOString(),
+        dateUTC: date.getUTCHours() + ":" + date.getUTCMinutes(),
+        dateLocal: date.getHours() + ":" + date.getMinutes(),
+        timezone: timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isClient: typeof window !== "undefined",
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A,D",
+    }),
+  }).catch(() => {})
+  // #endregion
+
+  // Use client's timezone if available, otherwise use server timezone
+  const result = date.toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
+    ...(timeZone && { timeZone }),
   })
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "calculations.ts:176",
+      message: "formatTime result",
+      data: { formatted: result, timezone: timeZone },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A,D",
+    }),
+  }).catch(() => {})
+  // #endregion
+  return result
 }
 
 /**
@@ -179,4 +278,3 @@ export function getRecommendedExposureTime(uvIndex: number): number {
   if (uvIndex <= 10) return 15
   return 10
 }
-

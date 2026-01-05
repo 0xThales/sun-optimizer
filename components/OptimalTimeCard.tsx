@@ -1,14 +1,14 @@
-'use client'
+"use client"
 
-import { Clock, Sparkles, AlertCircle } from 'lucide-react'
-import { GlassCard } from './ui/GlassCard'
-import { 
-  calculateOptimalTime, 
+import { Clock, Sparkles, AlertCircle } from "lucide-react"
+import { GlassCard } from "./ui/GlassCard"
+import {
+  calculateOptimalTime,
   formatTime,
-  getRecommendedExposureTime 
-} from '@/lib/utils/calculations'
-import { HourlyUV } from '@/types'
-import { cn } from '@/lib/utils/cn'
+  getRecommendedExposureTime,
+} from "@/lib/utils/calculations"
+import { HourlyUV } from "@/types"
+import { cn } from "@/lib/utils/cn"
 
 interface OptimalTimeCardProps {
   hourlyUV: HourlyUV[]
@@ -32,24 +32,62 @@ export function OptimalTimeCard({ hourlyUV, currentUV }: OptimalTimeCardProps) {
           </div>
         </div>
         <p className="text-white/60 text-sm">
-          No hay datos suficientes para calcular el mejor momento de exposición solar hoy.
+          No hay datos suficientes para calcular el mejor momento de exposición
+          solar hoy.
         </p>
       </GlassCard>
     )
   }
 
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "OptimalTimeCard.tsx:42",
+      message: "before formatTime",
+      data: {
+        startTimeISO: optimalTime.startTime,
+        endTimeISO: optimalTime.endTime,
+        clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isClient: typeof window !== "undefined",
+      },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A",
+    }),
+  }).catch(() => {})
+  // #endregion
   const startTime = formatTime(optimalTime.startTime)
   const endTime = formatTime(optimalTime.endTime)
+  // #region agent log
+  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "OptimalTimeCard.tsx:44",
+      message: "after formatTime",
+      data: { startTimeFormatted: startTime, endTimeFormatted: endTime },
+      timestamp: Date.now(),
+      sessionId: "debug-session",
+      runId: "run1",
+      hypothesisId: "A",
+    }),
+  }).catch(() => {})
+  // #endregion
   const isSameHour = startTime === endTime
 
   return (
     <GlassCard variant="secondary" className="h-full">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className={cn(
-          'p-2 rounded-xl',
-          optimalTime.isGoodForVitaminD ? 'bg-amber-500/20' : 'bg-blue-500/20'
-        )}>
+        <div
+          className={cn(
+            "p-2 rounded-xl",
+            optimalTime.isGoodForVitaminD ? "bg-amber-500/20" : "bg-blue-500/20"
+          )}
+        >
           {optimalTime.isGoodForVitaminD ? (
             <Sparkles className="w-6 h-6 text-amber-400" />
           ) : (
@@ -59,7 +97,9 @@ export function OptimalTimeCard({ hourlyUV, currentUV }: OptimalTimeCardProps) {
         <div>
           <p className="text-white/60 text-sm">Mejor Hora para el Sol</p>
           <p className="text-white font-medium text-lg">
-            {optimalTime.isGoodForVitaminD ? 'Vitamina D Óptima' : 'Mejor Disponible'}
+            {optimalTime.isGoodForVitaminD
+              ? "Vitamina D Óptima"
+              : "Mejor Disponible"}
           </p>
         </div>
       </div>
@@ -76,15 +116,14 @@ export function OptimalTimeCard({ hourlyUV, currentUV }: OptimalTimeCardProps) {
           )}
         </div>
         <p className="text-white/60 text-sm mt-1">
-          UV: {optimalTime.uvRange.min.toFixed(1)} - {optimalTime.uvRange.max.toFixed(1)}
+          UV: {optimalTime.uvRange.min.toFixed(1)} -{" "}
+          {optimalTime.uvRange.max.toFixed(1)}
         </p>
       </div>
 
       {/* Info */}
       <div className="space-y-2">
-        <p className="text-white/70 text-sm">
-          {optimalTime.reason}
-        </p>
+        <p className="text-white/70 text-sm">{optimalTime.reason}</p>
         <div className="flex gap-2 flex-wrap">
           <span className="text-white/80 text-xs bg-white/10 px-2 py-1 rounded">
             <Clock className="w-3 h-3 inline mr-1" />
@@ -101,4 +140,3 @@ export function OptimalTimeCard({ hourlyUV, currentUV }: OptimalTimeCardProps) {
     </GlassCard>
   )
 }
-
