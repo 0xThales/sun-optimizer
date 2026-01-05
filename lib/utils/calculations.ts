@@ -47,7 +47,7 @@ export function getProtectionRecommendation(uvIndex: number): ProtectionRecommen
     level,
     spfNeeded: SPF_RECOMMENDATIONS[level],
     message: message.message,
-    precautions: message.precautions,
+    precautions: [...message.precautions],
   }
 }
 
