@@ -39,43 +39,8 @@ export function OptimalTimeCard({ hourlyUV, currentUV }: OptimalTimeCardProps) {
     )
   }
 
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "OptimalTimeCard.tsx:42",
-      message: "before formatTime",
-      data: {
-        startTimeISO: optimalTime.startTime,
-        endTimeISO: optimalTime.endTime,
-        clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        isClient: typeof window !== "undefined",
-      },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "A",
-    }),
-  }).catch(() => {})
-  // #endregion
   const startTime = formatTime(optimalTime.startTime)
   const endTime = formatTime(optimalTime.endTime)
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "OptimalTimeCard.tsx:44",
-      message: "after formatTime",
-      data: { startTimeFormatted: startTime, endTimeFormatted: endTime },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "A",
-    }),
-  }).catch(() => {})
-  // #endregion
   const isSameHour = startTime === endTime
 
   return (

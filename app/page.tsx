@@ -7,10 +7,12 @@ import { UVIndexDisplay } from '@/components/UVIndexDisplay'
 import { OptimalTimeCard } from '@/components/OptimalTimeCard'
 import { UVChart } from '@/components/UVChart'
 import { SunTimes } from '@/components/SunTimes'
+import { LocalTimeDisplay } from '@/components/LocalTimeDisplay'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { GlassButton } from '@/components/ui/GlassButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { getUserLocation, isGeolocationSupported } from '@/lib/utils/geolocation'
+import { getTimeAwareness, getBackgroundImage } from '@/lib/utils/timeAwareness'
 import { WeatherData, Coordinates, LocationSearchResult } from '@/types'
 
 export default function Home() {
@@ -18,6 +20,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [backgroundImage, setBackgroundImage] = useState('/weather.avif')
 
   // Fetch weather data for coordinates
   const fetchWeatherData = useCallback(async (coords: Coordinates) => {
@@ -37,6 +40,15 @@ export default function Home() {
 
       setWeatherData(result.data)
       setLastUpdate(new Date())
+      
+      // Update background based on day/night
+      if (result.data?.sunTimes) {
+        const timeData = getTimeAwareness(
+          result.data.sunTimes.sunrise,
+          result.data.sunTimes.sunset
+        )
+        setBackgroundImage(getBackgroundImage(timeData.isDayTime))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
       setWeatherData(null)
@@ -82,8 +94,19 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <main 
+      className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 transition-all duration-1000"
+      style={{
+        backgroundImage: `url('${backgroundImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="fixed inset-0 bg-black/20 pointer-events-none -z-10" />
+      
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -152,6 +175,13 @@ export default function Home() {
         {/* Main Content */}
         {weatherData && (
           <div className="space-y-4 sm:space-y-6 animate-fade-in">
+            {/* Local Time Display */}
+            <LocalTimeDisplay
+              sunrise={weatherData.sunTimes.sunrise}
+              sunset={weatherData.sunTimes.sunset}
+              locationName={weatherData.location.name}
+            />
+
             {/* UV Index - Full width on mobile, prominent display */}
             <UVIndexDisplay 
               uvIndex={weatherData.uvData.current}

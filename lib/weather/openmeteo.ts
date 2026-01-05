@@ -1,5 +1,9 @@
 import { OpenMeteoResponse, NormalizedWeatherData } from "./types"
-import { parseISOString, extractHourFromISOString, getTimeDifferenceInMinutes } from "@/lib/utils/date"
+import {
+  parseISOString,
+  extractHourFromISOString,
+  getTimeDifferenceInMinutes,
+} from "@/lib/utils/date"
 
 const BASE_URL = "https://api.open-meteo.com/v1"
 
@@ -49,49 +53,10 @@ export async function getWeatherData(
   // Note: Open-Meteo returns times in the location's timezone when using timezone: "auto"
   // We use extractHourFromISOString to preserve the original timezone information
   const hourlyUV = (data.hourly?.time || []).map((time, index) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "openmeteo.ts:48",
-        message: "parsing hourly time with date-fns",
-        data: {
-          timeString: time,
-          serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        timestamp: Date.now(),
-        sessionId: "debug-session",
-        runId: "run2",
-        hypothesisId: "date-fns-refactor",
-      }),
-    }).catch(() => {})
-    // #endregion
-    
     // Parse the ISO string and extract hour using date-fns utilities
     const date = parseISOString(time)
     const hour = extractHourFromISOString(time)
-    
-    // #region agent log
-    fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "openmeteo.ts:50",
-        message: "date parsed with date-fns",
-        data: {
-          dateISO: date.toISOString(),
-          hourExtracted: hour,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        timestamp: Date.now(),
-        sessionId: "debug-session",
-        runId: "run2",
-        hypothesisId: "date-fns-refactor",
-      }),
-    }).catch(() => {})
-    // #endregion
-    
+
     return {
       time: date.toISOString(),
       hour: hour,

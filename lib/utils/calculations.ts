@@ -10,7 +10,12 @@ import {
   SPF_RECOMMENDATIONS,
   PROTECTION_MESSAGES,
 } from "@/lib/constants"
-import { formatTime, formatDuration, getTimeDifferenceInMinutes, parseISOString } from "@/lib/utils/date"
+import {
+  formatTime,
+  formatDuration,
+  getTimeDifferenceInMinutes,
+  parseISOString,
+} from "@/lib/utils/date"
 import { addHours } from "date-fns"
 
 /**
@@ -110,28 +115,6 @@ export function calculateOptimalTime(
 
   const startHour = optimalHours[longestWindow.start]
   const endHour = optimalHours[longestWindow.end]
-
-  // #region agent log
-  fetch("http://127.0.0.1:7243/ingest/cdd6a619-edec-4e95-b8fd-9dd4c9cc2c8a", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      location: "calculations.ts:109",
-      message: "calculateOptimalTime selected hours",
-      data: {
-        startHour: startHour.hour,
-        startTimeISO: startHour.time,
-        endHour: endHour.hour,
-        endTimeISO: endHour.time,
-        serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-      timestamp: Date.now(),
-      sessionId: "debug-session",
-      runId: "run1",
-      hypothesisId: "B,E",
-    }),
-  }).catch(() => {})
-  // #endregion
 
   const uvValues = optimalHours
     .slice(longestWindow.start, longestWindow.end + 1)

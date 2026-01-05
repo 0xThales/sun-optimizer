@@ -17,14 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div
-          className="min-h-screen bg-cover bg-center bg-fixed bg-no-repeat"
-          style={{ backgroundImage: "url('/weather.avif')" }}
-        >
-          <div className="min-h-screen bg-black/20">{children}</div>
-        </div>
-      </body>
+      <body className="bg-slate-900">{children}</body>
     </html>
   )
 }
