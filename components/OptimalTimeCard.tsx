@@ -9,6 +9,7 @@ import {
 import { formatTime } from "@/lib/utils/date"
 import { HourlyUV } from "@/types"
 import { cn } from "@/lib/utils/cn"
+import { useLanguage } from "./LanguageContext"
 
 interface OptimalTimeCardProps {
   hourlyUV: HourlyUV[]
@@ -34,6 +35,7 @@ function formatUVRange(min: number, max: number): string {
 }
 
 export function OptimalTimeCard({ hourlyUV, currentUV, timezone }: OptimalTimeCardProps) {
+  const { t } = useLanguage()
   const optimalTime = calculateOptimalTime(hourlyUV)
   const recommendedDuration = getRecommendedExposureTime(currentUV)
 
@@ -45,13 +47,12 @@ export function OptimalTimeCard({ hourlyUV, currentUV, timezone }: OptimalTimeCa
             <AlertCircle className="w-6 h-6 text-gray-400" />
           </div>
           <div>
-            <p className="text-white/60 text-sm">Hora Óptima</p>
-            <p className="text-white font-medium">No disponible</p>
+            <p className="text-white/60 text-sm">{t.common.bestSunWindow}</p>
+            <p className="text-white font-medium">{t.common.notAvailable}</p>
           </div>
         </div>
         <p className="text-white/60 text-sm">
-          No hay datos suficientes para calcular el mejor momento de exposición
-          solar hoy.
+          {t.common.insufficientData}
         </p>
       </GlassCard>
     )
@@ -63,10 +64,22 @@ export function OptimalTimeCard({ hourlyUV, currentUV, timezone }: OptimalTimeCa
   // Calculate duration in hours for display
   const durationHours = Math.floor(optimalTime.duration / 60)
   const durationDisplay = durationHours > 1 
-    ? `${durationHours} horas de ventana`
+    ? `${durationHours} ${t.common.hoursOfWindow}`
     : durationHours === 1 
-      ? "1 hora de ventana"
-      : "30 minutos"
+      ? t.common.hourOfWindow
+      : `30 ${t.common.minutesOfWindow}`
+
+  // Get localized reason text
+  const getReason = () => {
+    if (!optimalTime.reasonKey) return optimalTime.reason
+    let text = t.reasons[optimalTime.reasonKey]
+    if (optimalTime.reasonParams) {
+      Object.entries(optimalTime.reasonParams).forEach(([key, value]) => {
+        text = text.replace(`{${key}}`, String(value))
+      })
+    }
+    return text
+  }
 
   return (
     <GlassCard variant="secondary" className="h-full">
@@ -85,11 +98,11 @@ export function OptimalTimeCard({ hourlyUV, currentUV, timezone }: OptimalTimeCa
           )}
         </div>
         <div>
-          <p className="text-white/70 text-sm">Mejor Ventana para el Sol</p>
+          <p className="text-white/70 text-sm">{t.common.bestSunWindow}</p>
           <p className="text-white font-semibold text-lg text-shadow-sm">
             {optimalTime.isGoodForVitaminD
-              ? "Vitamina D Óptima"
-              : "Mejor Disponible"}
+              ? t.common.optimalVitaminD
+              : t.common.bestAvailable}
           </p>
         </div>
       </div>
@@ -112,16 +125,16 @@ export function OptimalTimeCard({ hourlyUV, currentUV, timezone }: OptimalTimeCa
 
       {/* Info */}
       <div className="space-y-3">
-        <p className="text-white/80 text-sm">{optimalTime.reason}</p>
+        <p className="text-white/80 text-sm">{getReason()}</p>
         <div className="flex gap-2 flex-wrap">
           <span className="text-white text-xs bg-slate-700/70 border border-white/10 px-2.5 py-1.5 rounded-md font-medium">
             <Clock className="w-3 h-3 inline mr-1.5 opacity-70" />
-            {recommendedDuration} min exposición recomendada
+            {recommendedDuration} {t.common.minutesOfWindow} {t.common.recommendedExposure}
           </span>
           {optimalTime.isGoodForVitaminD && (
             <span className="text-amber-200 text-xs bg-amber-900/50 border border-amber-500/30 px-2.5 py-1.5 rounded-md font-medium">
               <Sparkles className="w-3 h-3 inline mr-1.5" />
-              Ideal para Vitamina D
+              {t.common.idealForVitaminD}
             </span>
           )}
         </div>

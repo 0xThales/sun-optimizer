@@ -11,55 +11,105 @@ import { LocalTimeDisplay } from "@/components/LocalTimeDisplay"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { GlassButton } from "@/components/ui/GlassButton"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { useLanguage } from "@/components/LanguageContext"
 import {
   getUserLocation,
   isGeolocationSupported,
 } from "@/lib/utils/geolocation"
-import { getTimeAwareness, getBackgroundImage } from "@/lib/utils/timeAwareness"
+import { getTimeAwareness, TimePeriod } from "@/lib/utils/timeAwareness"
+import {
+  fetchBackgroundImage,
+  getFallbackGradient,
+  preloadImage,
+  getBackgroundStyle,
+} from "@/lib/utils/backgrounds"
 import { WeatherData, Coordinates, LocationSearchResult } from "@/types"
 
 export default function Home() {
+  const { t, locale } = useLanguage()
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [backgroundImage, setBackgroundImage] = useState("/weather.avif")
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("day")
+  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false)
 
   // Fetch weather data for coordinates
-  const fetchWeatherData = useCallback(async (coords: Coordinates) => {
-    setIsLoading(true)
-    setError(null)
+  const fetchWeatherData = useCallback(
+    async (coords: Coordinates) => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      const response = await fetch(
-        `/api/weather?lat=${coords.lat}&lon=${coords.lon}`
-      )
-
-      const result = await response.json()
-
-      if (!result.success) {
-        throw new Error(result.error || "Error obteniendo datos del clima")
-      }
-
-      setWeatherData(result.data)
-      setLastUpdate(new Date())
-
-      // Update background based on day/night
-      if (result.data?.sunTimes) {
-        const timeData = getTimeAwareness(
-          result.data.sunTimes.sunrise,
-          result.data.sunTimes.sunset,
-          result.data.sunTimes.timezone
+      try {
+        const response = await fetch(
+          `/api/weather?lat=${coords.lat}&lon=${coords.lon}`
         )
-        setBackgroundImage(getBackgroundImage(timeData.isDayTime))
+
+        const result = await response.json()
+
+        if (!result.success) {
+          throw new Error(
+            result.error ||
+              (locale === "en"
+                ? "Error fetching weather data"
+                : "Error obteniendo datos del clima")
+          )
+        }
+
+        setWeatherData(result.data)
+        setLastUpdate(new Date())
+
+        // Update background based on time period and location
+        if (result.data?.sunTimes) {
+          const timeData = getTimeAwareness(
+            result.data.sunTimes.sunrise,
+            result.data.sunTimes.sunset,
+            result.data.sunTimes.timezone
+          )
+          setTimePeriod(timeData.timePeriod)
+
+          // Fetch and preload the background image from Unsplash
+          const locationName = result.data.location?.name
+          setIsBackgroundLoading(true)
+
+          fetchBackgroundImage({
+            locationName,
+            timePeriod: timeData.timePeriod,
+          })
+            .then(async (response) => {
+              if (response.success && response.imageUrl) {
+                // Preload the image before displaying
+                const loadedUrl = await preloadImage(response.imageUrl)
+                setBackgroundUrl(loadedUrl)
+              } else {
+                setBackgroundUrl(null)
+              }
+            })
+            .catch(() => {
+              // Silently fail - fallback gradient will be used
+              setBackgroundUrl(null)
+            })
+            .finally(() => {
+              setIsBackgroundLoading(false)
+            })
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : locale === "en"
+            ? "Unknown error"
+            : "Error desconocido"
+        )
+        setWeatherData(null)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido")
-      setWeatherData(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+    },
+    [locale]
+  )
 
   // Handle location selection from search
   const handleLocationSelect = useCallback(
@@ -79,16 +129,24 @@ export default function Home() {
         } catch {
           // Geolocation failed, show search prompt
           setIsLoading(false)
-          setError("Permite el acceso a tu ubicación o busca una ciudad")
+          setError(
+            locale === "en"
+              ? "Allow location access or search for a city"
+              : "Permite el acceso a tu ubicación o busca una ciudad"
+          )
         }
       } else {
         setIsLoading(false)
-        setError("Busca una ubicación para comenzar")
+        setError(
+          locale === "en"
+            ? "Search for a location to start"
+            : "Busca una ubicación para comenzar"
+        )
       }
     }
 
     initLocation()
-  }, [fetchWeatherData])
+  }, [fetchWeatherData, locale])
 
   // Refresh data
   const handleRefresh = () => {
@@ -100,45 +158,56 @@ export default function Home() {
     }
   }
 
+  // Get background style based on current state
+  const bgStyle = getBackgroundStyle(
+    backgroundUrl,
+    getFallbackGradient(timePeriod)
+  )
+
   return (
     <main
-      className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 transition-all duration-1000"
+      className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 bg-transition"
       style={{
-        background: backgroundImage,
-        backgroundAttachment: "fixed",
+        ...bgStyle,
         minHeight: "100vh",
       }}
     >
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <header className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="icon-container icon-container-amber">
-                <Sun className="w-8 h-8 text-amber-300 icon-glow-amber" />
+              <div className="icon-container icon-container-amber shrink-0">
+                <Sun className="w-7 h-7 sm:w-8 sm:h-8 text-amber-300 icon-glow-amber" />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white text-shadow-lg">
-                  SunOptimizer
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-3xl font-bold text-white text-shadow-lg truncate">
+                  {t.common.sunOptimizer}
                 </h1>
-                <p className="text-white/70 text-sm text-shadow-sm">
-                  Encuentra el mejor momento para el sol
+                <p className="text-white/70 text-xs sm:text-sm text-shadow-sm truncate">
+                  {t.common.subtitle}
                 </p>
               </div>
             </div>
 
-            {weatherData && (
-              <GlassButton
-                onClick={handleRefresh}
-                variant="icon"
-                disabled={isLoading}
-                title="Actualizar datos"
-              >
-                <RefreshCw
-                  className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
-                />
-              </GlassButton>
-            )}
+            <div className="flex items-center justify-end gap-2 sm:gap-3">
+              <LanguageSwitcher />
+              {weatherData && (
+                <GlassButton
+                  onClick={handleRefresh}
+                  variant="icon"
+                  disabled={isLoading}
+                  title={t.common.refreshData}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                      isLoading ? "animate-spin" : ""
+                    }`}
+                  />
+                </GlassButton>
+              )}
+            </div>
           </div>
 
           {/* Search */}
@@ -149,7 +218,10 @@ export default function Home() {
 
           {lastUpdate && (
             <p className="text-white/40 text-xs mt-2">
-              Actualizado: {lastUpdate.toLocaleTimeString("es-ES")}
+              {t.common.updatedAt}:{" "}
+              {lastUpdate.toLocaleTimeString(
+                locale === "en" ? "en-US" : "es-ES"
+              )}
             </p>
           )}
         </header>
@@ -157,7 +229,14 @@ export default function Home() {
         {/* Loading State */}
         {isLoading && !weatherData && (
           <div className="flex items-center justify-center py-20">
-            <LoadingSpinner size="lg" text="Obteniendo datos de ubicación..." />
+            <LoadingSpinner
+              size="lg"
+              text={
+                locale === "en"
+                  ? "Getting location data..."
+                  : "Obteniendo datos de ubicación..."
+              }
+            />
           </div>
         )}
 
@@ -166,13 +245,22 @@ export default function Home() {
           <GlassCard variant="primary" className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
             <h2 className="text-white text-xl font-semibold mb-2">
-              {error.includes("Permite") || error.includes("Busca")
-                ? "¡Bienvenido!"
+              {(locale === "es" &&
+                (error.includes("Permite") || error.includes("Busca"))) ||
+              (locale === "en" &&
+                (error.includes("Allow") || error.includes("Search")))
+                ? locale === "en"
+                  ? "Welcome!"
+                  : "¡Bienvenido!"
+                : locale === "en"
+                ? "Error"
                 : "Error"}
             </h2>
             <p className="text-white/70 mb-4">{error}</p>
             <p className="text-white/50 text-sm">
-              Usa el buscador de arriba para encontrar tu ubicación
+              {locale === "en"
+                ? "Use the search box above to find your location"
+                : "Usa el buscador de arriba para encontrar tu ubicación"}
             </p>
           </GlassCard>
         )}
@@ -218,7 +306,9 @@ export default function Home() {
         {/* Footer */}
         <footer className="mt-8 pt-6 border-t border-white/10">
           <p className="text-white/30 text-xs text-center">
-            SunOptimizer · Datos proporcionados por Open-Meteo
+            SunOptimizer ·{" "}
+            {locale === "en" ? "Data provided by" : "Datos proporcionados por"}{" "}
+            Open-Meteo
           </p>
         </footer>
       </div>

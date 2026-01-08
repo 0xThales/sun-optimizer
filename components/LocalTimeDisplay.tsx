@@ -5,6 +5,7 @@ import { Clock, MapPin } from "lucide-react"
 import { GlassCard } from "./ui/GlassCard"
 import { getTimeAwareness, TimeAwarenessData } from "@/lib/utils/timeAwareness"
 import { cn } from "@/lib/utils/cn"
+import { useLanguage } from "./LanguageContext"
 
 interface LocalTimeDisplayProps {
   sunrise: string
@@ -19,6 +20,7 @@ export function LocalTimeDisplay({
   locationName,
   timezone,
 }: LocalTimeDisplayProps) {
+  const { t, locale } = useLanguage()
   const [timeData, setTimeData] = useState<TimeAwarenessData | null>(null)
 
   useEffect(() => {
@@ -53,14 +55,18 @@ export function LocalTimeDisplay({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="w-4 h-4 text-white/70" />
-            <span className="text-white text-sm font-medium text-shadow-sm">{locationName}</span>
+            <span className="text-white text-sm font-medium text-shadow-sm">
+              {locationName}
+            </span>
           </div>
 
           <div className="flex items-baseline gap-3">
             <Clock
               className={cn(
                 "w-6 h-6",
-                timeData.isDayTime ? "text-amber-400 icon-glow-amber" : "text-indigo-400 icon-glow-blue"
+                timeData.isDayTime
+                  ? "text-amber-400 icon-glow-amber"
+                  : "text-indigo-400 icon-glow-blue"
               )}
             />
             <div>
@@ -72,7 +78,7 @@ export function LocalTimeDisplay({
               >
                 {timeData.localTime}
               </p>
-              <p className="text-white/70 text-xs mt-1">Hora local</p>
+              <p className="text-white/70 text-xs mt-1">{t.common.localTime}</p>
             </div>
           </div>
         </div>
@@ -86,20 +92,26 @@ export function LocalTimeDisplay({
               : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
           )}
         >
-          {timeData.isDayTime ? "☀️ Día" : "🌙 Noche"}
+          {timeData.isDayTime
+            ? locale === "en"
+              ? "☀️ Day"
+              : "☀️ Día"
+            : locale === "en"
+            ? "🌙 Night"
+            : "🌙 Noche"}
         </div>
       </div>
 
       {/* Sunrise/Sunset info */}
       <div className="mt-4 pt-4 border-t border-white/10 flex justify-between text-xs">
         <div>
-          <span className="text-white/50">Amanecer:</span>
+          <span className="text-white/50">{t.common.sunrise}:</span>
           <span className="text-white/80 ml-2 font-medium">
             {timeData.sunriseTime}
           </span>
         </div>
         <div>
-          <span className="text-white/50">Atardecer:</span>
+          <span className="text-white/50">{t.common.sunset}:</span>
           <span className="text-white/80 ml-2 font-medium">
             {timeData.sunsetTime}
           </span>
@@ -108,5 +120,3 @@ export function LocalTimeDisplay({
     </GlassCard>
   )
 }
-
-

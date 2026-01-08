@@ -1,10 +1,12 @@
-// UV Index thresholds and risk levels
+// UV Index thresholds and risk levels (WHO standard)
+// Each level starts at 'min' and goes up to (but not including) the next level's min
+// Low: 0-2.99, Moderate: 3-5.99, High: 6-7.99, Very High: 8-10.99, Extreme: 11+
 export const UV_THRESHOLDS = {
-  LOW: { min: 0, max: 2 },
-  MODERATE: { min: 3, max: 5 },
-  HIGH: { min: 6, max: 7 },
-  VERY_HIGH: { min: 8, max: 10 },
-  EXTREME: { min: 11, max: Infinity },
+  LOW: { min: 0, max: 3 },        // UV < 3
+  MODERATE: { min: 3, max: 6 },   // 3 <= UV < 6
+  HIGH: { min: 6, max: 8 },       // 6 <= UV < 8
+  VERY_HIGH: { min: 8, max: 11 }, // 8 <= UV < 11
+  EXTREME: { min: 11, max: Infinity }, // UV >= 11
 } as const
 
 // UV colors for display (Tailwind classes)
@@ -55,59 +57,6 @@ export const OPTIMAL_UV_RANGE = {
   min: 3,
   max: 7,
 } as const
-
-// Protection messages by UV level
-export const PROTECTION_MESSAGES = {
-  low: {
-    message: "Bajo riesgo de daño solar",
-    precautions: [
-      "Uso mínimo de protección",
-      "Seguro para exposición prolongada",
-    ],
-  },
-  moderate: {
-    message: "Riesgo moderado de daño solar",
-    precautions: [
-      "Usar protector solar SPF 30",
-      "Buscar sombra en horas pico",
-      "Usar gafas de sol",
-    ],
-  },
-  high: {
-    message: "Alto riesgo de daño solar",
-    precautions: [
-      "Protector solar SPF 30+ obligatorio",
-      "Evitar exposición entre 10am-4pm",
-      "Usar sombrero y gafas",
-      "Buscar sombra",
-    ],
-  },
-  "very-high": {
-    message: "Riesgo muy alto de daño solar",
-    precautions: [
-      "Evitar exposición solar directa",
-      "Protector solar SPF 50",
-      "Ropa protectora obligatoria",
-      "Permanecer en sombra",
-    ],
-  },
-  extreme: {
-    message: "Riesgo extremo de daño solar",
-    precautions: [
-      "Evitar salir en horas de sol",
-      "Protección máxima requerida",
-      "Daño ocurre en minutos",
-      "Permanezca en interiores si es posible",
-    ],
-  },
-} as const
-
-// Time format options
-export const TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-}
 
 // Default location (Madrid, Spain as fallback)
 export const DEFAULT_LOCATION = {

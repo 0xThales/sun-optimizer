@@ -13,32 +13,35 @@
 }
 
 @layer components {
-  /* Glass cards - true glassmorphism with good contrast */
+  /* Glass cards - enhanced glassmorphism for photo backgrounds */
   .glass-card {
-    @apply backdrop-blur-xl rounded-xl shadow-xl;
-    background: rgba(15, 23, 42, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-card-primary {
-    @apply backdrop-blur-2xl rounded-2xl shadow-2xl;
-    background: rgba(15, 23, 42, 0.6);
+    @apply backdrop-blur-2xl rounded-xl shadow-xl;
+    background: rgba(15, 23, 42, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 
-      0 12px 40px rgba(0, 0, 0, 0.35),
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
-  .glass-card-secondary {
-    @apply backdrop-blur-xl rounded-xl shadow-lg;
-    background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  .glass-card-primary {
+    @apply backdrop-blur-3xl rounded-2xl shadow-2xl;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 
-      0 4px 24px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 12px 40px rgba(0, 0, 0, 0.45),
+      0 4px 12px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .glass-card-secondary {
+    @apply backdrop-blur-2xl rounded-xl shadow-lg;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 4px 24px rgba(0, 0, 0, 0.35),
+      0 2px 6px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   /* Glass buttons */
@@ -122,17 +125,25 @@
     border: 1px solid rgba(239, 68, 68, 0.25);
   }
 
-  /* Text shadows for readability on any background */
+  /* Text shadows for readability on photo backgrounds */
   .text-shadow {
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.6), 
+      0 1px 3px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(0, 0, 0, 0.3);
   }
 
   .text-shadow-lg {
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+    text-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.7), 
+      0 2px 6px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(0, 0, 0, 0.4);
   }
   
   .text-shadow-sm {
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    text-shadow: 
+      0 1px 4px rgba(0, 0, 0, 0.5),
+      0 0 10px rgba(0, 0, 0, 0.2);
   }
 
   /* Icon glow effects */
@@ -153,5 +164,26 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Smooth background transitions */
+  .bg-transition {
+    transition: background-image 1.5s ease-in-out, background 1.5s ease-in-out;
+  }
+
+  /* Fade in animation for content */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

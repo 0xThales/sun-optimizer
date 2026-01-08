@@ -5,9 +5,19 @@
 import { parseISO, format } from "date-fns"
 import { formatInTimeZone, toZonedTime, fromZonedTime } from "date-fns-tz"
 
+/**
+ * Time periods for atmospheric backgrounds
+ * - night: Dark hours (after sunset + golden hour, before sunrise - golden hour)
+ * - sunrise: Golden hour around sunrise (~45 mins before/after)
+ * - day: Bright daylight hours
+ * - sunset: Golden hour around sunset (~45 mins before/after)
+ */
+export type TimePeriod = "night" | "sunrise" | "day" | "sunset"
+
 export interface TimeAwarenessData {
   isDayTime: boolean
   isNightTime: boolean
+  timePeriod: TimePeriod
   localTime: string // HH:mm format
   localDate: string // Full date string
   timeZone: string
@@ -54,6 +64,46 @@ function extractTimeFromISO(isoString: string, timezone: string): string {
 }
 
 /**
+ * Golden hour duration in milliseconds (45 minutes)
+ */
+const GOLDEN_HOUR_MS = 45 * 60 * 1000
+
+/**
+ * Determine the current time period based on sun position
+ */
+function getTimePeriod(
+  now: Date,
+  sunriseDate: Date,
+  sunsetDate: Date
+): TimePeriod {
+  const nowMs = now.getTime()
+  const sunriseMs = sunriseDate.getTime()
+  const sunsetMs = sunsetDate.getTime()
+
+  // Sunrise golden hour: 45 mins before to 45 mins after sunrise
+  const sunriseStart = sunriseMs - GOLDEN_HOUR_MS
+  const sunriseEnd = sunriseMs + GOLDEN_HOUR_MS
+
+  // Sunset golden hour: 45 mins before to 45 mins after sunset
+  const sunsetStart = sunsetMs - GOLDEN_HOUR_MS
+  const sunsetEnd = sunsetMs + GOLDEN_HOUR_MS
+
+  if (nowMs >= sunriseStart && nowMs <= sunriseEnd) {
+    return "sunrise"
+  }
+
+  if (nowMs >= sunsetStart && nowMs <= sunsetEnd) {
+    return "sunset"
+  }
+
+  if (nowMs > sunriseEnd && nowMs < sunsetStart) {
+    return "day"
+  }
+
+  return "night"
+}
+
+/**
  * Determine if it's currently day or night at a location based on sunrise/sunset
  * Now uses the IANA timezone for accurate time calculations
  *
@@ -80,6 +130,9 @@ export function getTimeAwareness(
   const isDayTime = now >= sunriseDate && now <= sunsetDate
   const isNightTime = !isDayTime
 
+  // Determine the specific time period
+  const timePeriod = getTimePeriod(now, sunriseDate, sunsetDate)
+
   // Format times in the target timezone
   const localTime = formatInTimeZone(now, tz, "HH:mm")
   const localDate = formatInTimeZone(now, tz, "EEEE, d MMMM yyyy")
@@ -91,6 +144,7 @@ export function getTimeAwareness(
   return {
     isDayTime,
     isNightTime,
+    timePeriod,
     localTime,
     localDate,
     timeZone: tz,

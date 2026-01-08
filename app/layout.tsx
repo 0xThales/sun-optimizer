@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import { LanguageProvider } from "@/components/LanguageContext"
 
 export const metadata: Metadata = {
   title: "SunOptimizer - Best Time for Sun Exposure",
@@ -21,8 +22,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-900">{children}</body>
+    <html lang="es">
+      <body className="bg-slate-900">
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
+      </body>
     </html>
   )
 }

@@ -11,7 +11,7 @@ export interface Location extends Coordinates {
 }
 
 // UV Index types
-export type UVRiskLevel = 'low' | 'moderate' | 'high' | 'very-high' | 'extreme'
+export type UVRiskLevel = "low" | "moderate" | "high" | "very-high" | "extreme"
 
 export interface UVData {
   current: number
@@ -51,6 +51,13 @@ export interface OptimalTimeRecommendation {
     max: number
   }
   reason: string
+  reasonKey?:
+    | "optimalUV"
+    | "lowUVToday"
+    | "veryLowUVToday"
+    | "highUVToday"
+    | "extremeUVToday"
+  reasonParams?: Record<string, string | number>
   duration: number // minutes
   isGoodForVitaminD: boolean
 }
@@ -85,5 +92,3 @@ export interface GeolocationState {
   error: string | null
   coordinates: Coordinates | null
 }
-
-

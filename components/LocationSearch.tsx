@@ -8,6 +8,7 @@ import { GlassCard } from './ui/GlassCard'
 import { geocodeLocation } from '@/lib/weather/openmeteo'
 import { getUserLocation, isGeolocationSupported } from '@/lib/utils/geolocation'
 import { Coordinates, LocationSearchResult } from '@/types'
+import { useLanguage } from './LanguageContext'
 
 interface LocationSearchProps {
   onLocationSelect: (location: LocationSearchResult & Coordinates) => void
@@ -15,6 +16,7 @@ interface LocationSearchProps {
 }
 
 export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchProps) {
+  const { t, locale } = useLanguage()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Array<{
     name: string
@@ -57,12 +59,12 @@ export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchPr
       setResults(searchResults)
       setShowResults(searchResults.length > 0)
     } catch (err) {
-      setError('Error buscando ubicación')
+      setError(locale === 'en' ? 'Error searching location' : 'Error buscando ubicación')
       setResults([])
     } finally {
       setIsSearching(false)
     }
-  }, [])
+  }, [locale])
 
   // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +96,7 @@ export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchPr
   // Handle "Use my location" button
   const handleUseMyLocation = async () => {
     if (!isGeolocationSupported()) {
-      setError('Geolocalización no soportada')
+      setError(locale === 'en' ? 'Geolocation not supported' : 'Geolocalización no soportada')
       return
     }
 
@@ -103,15 +105,16 @@ export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchPr
 
     try {
       const coords = await getUserLocation()
+      const myLocName = locale === 'en' ? 'My location' : 'Mi ubicación'
       onLocationSelect({
-        name: 'Mi ubicación',
+        name: myLocName,
         lat: coords.lat,
         lon: coords.lon,
         country: '',
       })
-      setQuery('Mi ubicación')
+      setQuery(myLocName)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error obteniendo ubicación')
+      setError(err instanceof Error ? err.message : (locale === 'en' ? 'Error getting location' : 'Error obteniendo ubicación'))
     } finally {
       setIsLocating(false)
     }
@@ -131,7 +134,7 @@ export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchPr
         <div className="relative flex-1">
           <GlassInput
             type="text"
-            placeholder="Buscar ubicación..."
+            placeholder={t.common.searchPlaceholder}
             value={query}
             onChange={handleInputChange}
             onFocus={() => results.length > 0 && setShowResults(true)}
@@ -160,14 +163,14 @@ export function LocationSearch({ onLocationSelect, isLoading }: LocationSearchPr
           disabled={isLocating || isLoading}
           variant="secondary"
           className="shrink-0"
-          title="Usar mi ubicación"
+          title={t.common.useMyLocation}
         >
           {isLocating ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
             <Navigation className="w-5 h-5" />
           )}
-          <span className="hidden sm:inline">Mi ubicación</span>
+          <span className="hidden sm:inline">{t.common.useMyLocation}</span>
         </GlassButton>
       </div>
 
