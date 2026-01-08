@@ -1,9 +1,6 @@
 import { OpenMeteoResponse, NormalizedWeatherData } from "./types"
-import {
-  parseISOString,
-  extractHourFromISOString,
-  getTimeDifferenceInMinutes,
-} from "@/lib/utils/date"
+import { extractHourFromISOString } from "@/lib/utils/date"
+import { fromZonedTime } from "date-fns-tz"
 
 const BASE_URL = "https://api.open-meteo.com/v1"
 
@@ -37,29 +34,34 @@ export async function getWeatherData(
   // Get location name via reverse geocoding (Open-Meteo doesn't provide this)
   const locationName = await reverseGeocode(lat, lon)
 
-  // Parse sunrise/sunset from daily data using date-fns
+  // Get timezone from Open-Meteo response
+  const timezone = data.timezone // e.g. "America/Argentina/Buenos_Aires"
+
+  // Parse sunrise/sunset from daily data
+  // Open-Meteo returns local times like "2026-01-08T05:50" (no timezone offset)
   const sunrise = data.daily?.sunrise?.[0] || ""
   const sunset = data.daily?.sunset?.[0] || ""
 
-  // Calculate solar noon and day length using date-fns
-  const sunriseDate = parseISOString(sunrise)
-  const sunsetDate = parseISOString(sunset)
+  // Convert local times to UTC Date objects using the correct timezone
+  // fromZonedTime interprets the string as being in the specified timezone
+  const sunriseDate = fromZonedTime(sunrise, timezone)
+  const sunsetDate = fromZonedTime(sunset, timezone)
   const solarNoon = new Date((sunriseDate.getTime() + sunsetDate.getTime()) / 2)
   const dayLength = Math.floor(
     (sunsetDate.getTime() - sunriseDate.getTime()) / 1000
   )
 
-  // Extract hourly UV data using date-fns
-  // Note: Open-Meteo returns times in the location's timezone when using timezone: "auto"
-  // We use extractHourFromISOString to preserve the original timezone information
+  // Extract hourly UV data
+  // IMPORTANT: Open-Meteo returns times in the location's local timezone (e.g., "2026-01-08T09:00")
+  // We keep the original time strings since they're already in local time
+  // The `hour` field contains the local hour for easy calculations
   const hourlyUV = (data.hourly?.time || []).map((time, index) => {
-    // Parse the ISO string and extract hour using date-fns utilities
-    const date = parseISOString(time)
+    // Extract hour directly from the local time string
     const hour = extractHourFromISOString(time)
 
     return {
-      time: date.toISOString(),
-      hour: hour,
+      time: time, // Keep original local time string (e.g., "2026-01-08T09:00")
+      hour: hour, // Local hour (e.g., 9 for 9:00 AM Buenos Aires)
       uv: data.hourly?.uv_index?.[index] || 0,
     }
   })
@@ -70,10 +72,12 @@ export async function getWeatherData(
     locationName,
     currentUV: data.current?.uv_index || 0,
     hourlyUV,
-    sunrise: sunriseDate.toISOString(),
-    sunset: sunsetDate.toISOString(),
+    sunrise, // Local time string (e.g., "2026-01-08T05:50")
+    sunset, // Local time string (e.g., "2026-01-08T20:10")
     solarNoon: solarNoon.toISOString(),
     dayLength,
+    timezone, // IANA timezone e.g. "America/Argentina/Buenos_Aires"
+    utcOffsetSeconds: data.utc_offset_seconds,
   }
 }
 

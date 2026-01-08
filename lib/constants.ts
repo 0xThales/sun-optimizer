@@ -116,3 +116,5 @@ export const DEFAULT_LOCATION = {
   lon: -3.7038,
   country: "ES",
 } as const
+
+

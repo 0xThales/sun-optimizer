@@ -74,6 +74,8 @@ export async function GET(request: NextRequest) {
         sunset: weatherData.sunset,
         solarNoon: weatherData.solarNoon,
         dayLength: weatherData.dayLength,
+        timezone: weatherData.timezone,
+        utcOffsetSeconds: weatherData.utcOffsetSeconds,
       },
       timestamp: new Date().toISOString(),
     }
@@ -93,3 +95,4 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+

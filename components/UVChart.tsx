@@ -15,9 +15,11 @@ import { GlassCard } from './ui/GlassCard'
 import { HourlyUV } from '@/types'
 import { getUVRiskLevel } from '@/lib/utils/calculations'
 import { OPTIMAL_UV_RANGE } from '@/lib/constants'
+import { formatInTimeZone } from 'date-fns-tz'
 
 interface UVChartProps {
   hourlyUV: HourlyUV[]
+  timezone: string // IANA timezone e.g. "Europe/Madrid"
 }
 
 // Custom tooltip component
@@ -36,11 +38,12 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-export function UVChart({ hourlyUV }: UVChartProps) {
+export function UVChart({ hourlyUV, timezone }: UVChartProps) {
   // Process data for chart - filter daylight hours and format
   const chartData = useMemo(() => {
     const now = new Date()
-    const currentHour = now.getHours()
+    // Get current hour in the target timezone
+    const currentHour = parseInt(formatInTimeZone(now, timezone, 'H'), 10)
     
     // Get next 12 hours of data, prioritizing daytime hours
     return hourlyUV
@@ -52,7 +55,7 @@ export function UVChart({ hourlyUV }: UVChartProps) {
         isCurrent: h.hour === currentHour,
         displayHour: `${h.hour}:00`,
       }))
-  }, [hourlyUV])
+  }, [hourlyUV, timezone])
 
   // Find max UV for scale
   const maxUV = useMemo(() => {
@@ -90,14 +93,16 @@ export function UVChart({ hourlyUV }: UVChartProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-white/60" />
-          <h3 className="text-white font-medium">UV por Hora</h3>
+          <div className="icon-container icon-container-indigo">
+            <TrendingUp className="w-5 h-5 text-indigo-300" />
+          </div>
+          <h3 className="text-white font-semibold text-shadow-sm">UV por Hora</h3>
         </div>
-        <div className="flex gap-2 text-xs">
-          <span className="text-green-400">● Bajo</span>
-          <span className="text-yellow-400">● Mod</span>
-          <span className="text-orange-400">● Alto</span>
-          <span className="text-red-400">● Muy Alto</span>
+        <div className="flex gap-3 text-xs font-medium">
+          <span className="text-green-300">● Bajo</span>
+          <span className="text-yellow-300">● Mod</span>
+          <span className="text-orange-300">● Alto</span>
+          <span className="text-red-300">● Muy Alto</span>
         </div>
       </div>
 
@@ -122,29 +127,29 @@ export function UVChart({ hourlyUV }: UVChartProps) {
             
             <XAxis 
               dataKey="hour"
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+              tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 500 }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.15)' }}
               tickFormatter={(hour) => `${hour}h`}
             />
             
             <YAxis 
               domain={[0, maxUV]}
-              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+              tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 500 }}
               tickLine={false}
-              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.15)' }}
               tickCount={5}
             />
             
             {/* Optimal zone reference */}
             <ReferenceLine 
               y={OPTIMAL_UV_RANGE.min} 
-              stroke="rgba(250, 204, 21, 0.3)" 
+              stroke="rgba(250, 204, 21, 0.5)" 
               strokeDasharray="3 3"
             />
             <ReferenceLine 
               y={OPTIMAL_UV_RANGE.max} 
-              stroke="rgba(250, 204, 21, 0.3)" 
+              stroke="rgba(250, 204, 21, 0.5)" 
               strokeDasharray="3 3"
             />
             
@@ -153,7 +158,7 @@ export function UVChart({ hourlyUV }: UVChartProps) {
             <Area
               type="monotone"
               dataKey="uv"
-              stroke="rgba(255,255,255,0.8)"
+              stroke="rgba(255,255,255,0.9)"
               strokeWidth={2}
               fill="url(#uvGradient)"
             />
@@ -162,12 +167,13 @@ export function UVChart({ hourlyUV }: UVChartProps) {
       </div>
 
       {/* Legend */}
-      <div className="mt-3 pt-3 border-t border-white/10">
-        <p className="text-white/50 text-xs text-center">
+      <div className="mt-3 pt-3 border-t border-white/15">
+        <p className="text-white/60 text-xs text-center">
           Las líneas punteadas indican la zona óptima para síntesis de vitamina D (UV 3-7)
         </p>
       </div>
     </GlassCard>
   )
 }
+
 

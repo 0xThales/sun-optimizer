@@ -1,26 +1,29 @@
-'use client'
+"use client"
 
-import { useState, useEffect, useCallback } from 'react'
-import { Sun, AlertCircle, RefreshCw } from 'lucide-react'
-import { LocationSearch } from '@/components/LocationSearch'
-import { UVIndexDisplay } from '@/components/UVIndexDisplay'
-import { OptimalTimeCard } from '@/components/OptimalTimeCard'
-import { UVChart } from '@/components/UVChart'
-import { SunTimes } from '@/components/SunTimes'
-import { LocalTimeDisplay } from '@/components/LocalTimeDisplay'
-import { GlassCard } from '@/components/ui/GlassCard'
-import { GlassButton } from '@/components/ui/GlassButton'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { getUserLocation, isGeolocationSupported } from '@/lib/utils/geolocation'
-import { getTimeAwareness, getBackgroundImage } from '@/lib/utils/timeAwareness'
-import { WeatherData, Coordinates, LocationSearchResult } from '@/types'
+import { useState, useEffect, useCallback } from "react"
+import { Sun, AlertCircle, RefreshCw } from "lucide-react"
+import { LocationSearch } from "@/components/LocationSearch"
+import { UVIndexDisplay } from "@/components/UVIndexDisplay"
+import { OptimalTimeCard } from "@/components/OptimalTimeCard"
+import { UVChart } from "@/components/UVChart"
+import { SunTimes } from "@/components/SunTimes"
+import { LocalTimeDisplay } from "@/components/LocalTimeDisplay"
+import { GlassCard } from "@/components/ui/GlassCard"
+import { GlassButton } from "@/components/ui/GlassButton"
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
+import {
+  getUserLocation,
+  isGeolocationSupported,
+} from "@/lib/utils/geolocation"
+import { getTimeAwareness, getBackgroundImage } from "@/lib/utils/timeAwareness"
+import { WeatherData, Coordinates, LocationSearchResult } from "@/types"
 
 export default function Home() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [backgroundImage, setBackgroundImage] = useState('/weather.avif')
+  const [backgroundImage, setBackgroundImage] = useState("/weather.avif")
 
   // Fetch weather data for coordinates
   const fetchWeatherData = useCallback(async (coords: Coordinates) => {
@@ -31,26 +34,27 @@ export default function Home() {
       const response = await fetch(
         `/api/weather?lat=${coords.lat}&lon=${coords.lon}`
       )
-      
+
       const result = await response.json()
 
       if (!result.success) {
-        throw new Error(result.error || 'Error obteniendo datos del clima')
+        throw new Error(result.error || "Error obteniendo datos del clima")
       }
 
       setWeatherData(result.data)
       setLastUpdate(new Date())
-      
+
       // Update background based on day/night
       if (result.data?.sunTimes) {
         const timeData = getTimeAwareness(
           result.data.sunTimes.sunrise,
-          result.data.sunTimes.sunset
+          result.data.sunTimes.sunset,
+          result.data.sunTimes.timezone
         )
         setBackgroundImage(getBackgroundImage(timeData.isDayTime))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      setError(err instanceof Error ? err.message : "Error desconocido")
       setWeatherData(null)
     } finally {
       setIsLoading(false)
@@ -58,9 +62,12 @@ export default function Home() {
   }, [])
 
   // Handle location selection from search
-  const handleLocationSelect = useCallback((location: LocationSearchResult & Coordinates) => {
-    fetchWeatherData({ lat: location.lat, lon: location.lon })
-  }, [fetchWeatherData])
+  const handleLocationSelect = useCallback(
+    (location: LocationSearchResult & Coordinates) => {
+      fetchWeatherData({ lat: location.lat, lon: location.lon })
+    },
+    [fetchWeatherData]
+  )
 
   // Initial load - try to get user location
   useEffect(() => {
@@ -72,11 +79,11 @@ export default function Home() {
         } catch {
           // Geolocation failed, show search prompt
           setIsLoading(false)
-          setError('Permite el acceso a tu ubicación o busca una ciudad')
+          setError("Permite el acceso a tu ubicación o busca una ciudad")
         }
       } else {
         setIsLoading(false)
-        setError('Busca una ubicación para comenzar')
+        setError("Busca una ubicación para comenzar")
       }
     }
 
@@ -94,36 +101,32 @@ export default function Home() {
   }
 
   return (
-    <main 
+    <main
       className="min-h-screen px-4 py-6 sm:px-6 lg:px-8 transition-all duration-1000"
       style={{
-        backgroundImage: `url('${backgroundImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        background: backgroundImage,
+        backgroundAttachment: "fixed",
+        minHeight: "100vh",
       }}
     >
-      {/* Dark overlay */}
-      <div className="fixed inset-0 bg-black/20 pointer-events-none -z-10" />
-      
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/20">
-                <Sun className="w-8 h-8 text-amber-400" />
+              <div className="icon-container icon-container-amber">
+                <Sun className="w-8 h-8 text-amber-300 icon-glow-amber" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white text-shadow">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white text-shadow-lg">
                   SunOptimizer
                 </h1>
-                <p className="text-white/60 text-sm">
+                <p className="text-white/70 text-sm text-shadow-sm">
                   Encuentra el mejor momento para el sol
                 </p>
               </div>
             </div>
-            
+
             {weatherData && (
               <GlassButton
                 onClick={handleRefresh}
@@ -131,20 +134,22 @@ export default function Home() {
                 disabled={isLoading}
                 title="Actualizar datos"
               >
-                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
+                />
               </GlassButton>
             )}
           </div>
 
           {/* Search */}
-          <LocationSearch 
+          <LocationSearch
             onLocationSelect={handleLocationSelect}
             isLoading={isLoading}
           />
-          
+
           {lastUpdate && (
             <p className="text-white/40 text-xs mt-2">
-              Actualizado: {lastUpdate.toLocaleTimeString('es-ES')}
+              Actualizado: {lastUpdate.toLocaleTimeString("es-ES")}
             </p>
           )}
         </header>
@@ -161,9 +166,9 @@ export default function Home() {
           <GlassCard variant="primary" className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
             <h2 className="text-white text-xl font-semibold mb-2">
-              {error.includes('Permite') || error.includes('Busca') 
-                ? '¡Bienvenido!' 
-                : 'Error'}
+              {error.includes("Permite") || error.includes("Busca")
+                ? "¡Bienvenido!"
+                : "Error"}
             </h2>
             <p className="text-white/70 mb-4">{error}</p>
             <p className="text-white/50 text-sm">
@@ -180,10 +185,11 @@ export default function Home() {
               sunrise={weatherData.sunTimes.sunrise}
               sunset={weatherData.sunTimes.sunset}
               locationName={weatherData.location.name}
+              timezone={weatherData.sunTimes.timezone}
             />
 
             {/* UV Index - Full width on mobile, prominent display */}
-            <UVIndexDisplay 
+            <UVIndexDisplay
               uvIndex={weatherData.uvData.current}
               locationName={weatherData.location.name}
             />
@@ -191,9 +197,10 @@ export default function Home() {
             {/* Grid for secondary cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Optimal Time */}
-              <OptimalTimeCard 
+              <OptimalTimeCard
                 hourlyUV={weatherData.uvData.hourly}
                 currentUV={weatherData.uvData.current}
+                timezone={weatherData.sunTimes.timezone}
               />
 
               {/* Sun Times */}
@@ -201,7 +208,10 @@ export default function Home() {
             </div>
 
             {/* UV Chart - Full width */}
-            <UVChart hourlyUV={weatherData.uvData.hourly} />
+            <UVChart
+              hourlyUV={weatherData.uvData.hourly}
+              timezone={weatherData.sunTimes.timezone}
+            />
           </div>
         )}
 
@@ -215,4 +225,3 @@ export default function Home() {
     </main>
   )
 }
-

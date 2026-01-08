@@ -34,17 +34,41 @@ export function extractHourFromISOString(isoString: string): number {
 
 /**
  * Format a date/time for display in HH:mm format
- * Always formats in the user's local timezone (browser timezone)
+ * If timezone is provided, formats in that timezone
+ * Otherwise uses browser's local timezone
  *
- * @param dateInput - Date object or ISO string
+ * @param dateInput - Date object or ISO string (may or may not have timezone offset)
+ * @param timezone - Optional IANA timezone (e.g., "Europe/Madrid")
  * @returns Formatted time string in HH:mm format (e.g., "14:30")
  */
-export function formatTime(dateInput: Date | string): string {
-  const date = typeof dateInput === "string" ? parseISO(dateInput) : dateInput
-
-  // Use format from date-fns which respects the Date object's timezone
-  // The Date object is already in the correct timezone when created from ISO string
-  return format(date, "HH:mm")
+export function formatTime(dateInput: Date | string, timezone?: string): string {
+  if (typeof dateInput === "string") {
+    // Check if the ISO string already includes the time part with HH:mm
+    // Open-Meteo returns strings like "2024-01-08T05:50" which are already in local time
+    // If no timezone offset is present and we have a timezone, we should extract the time directly
+    const hasTimezoneOffset = /[+-]\d{2}:\d{2}$/.test(dateInput) || dateInput.endsWith('Z')
+    
+    if (!hasTimezoneOffset && timezone) {
+      // The time is already in local format, extract it directly
+      const timeMatch = dateInput.match(/T(\d{2}:\d{2})/)
+      if (timeMatch) {
+        return timeMatch[1]
+      }
+    }
+    
+    // Parse and format with timezone
+    const date = parseISO(dateInput)
+    if (timezone) {
+      return formatInTimeZone(date, timezone, "HH:mm")
+    }
+    return format(date, "HH:mm")
+  }
+  
+  // Date object
+  if (timezone) {
+    return formatInTimeZone(dateInput, timezone, "HH:mm")
+  }
+  return format(dateInput, "HH:mm")
 }
 
 /**
@@ -142,3 +166,4 @@ export function isTimeInRange(
 export function parseISOString(isoString: string): Date {
   return parseISO(isoString)
 }
+

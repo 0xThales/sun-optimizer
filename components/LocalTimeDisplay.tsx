@@ -10,19 +10,21 @@ interface LocalTimeDisplayProps {
   sunrise: string
   sunset: string
   locationName: string
+  timezone: string // IANA timezone e.g. "Europe/Madrid"
 }
 
 export function LocalTimeDisplay({
   sunrise,
   sunset,
   locationName,
+  timezone,
 }: LocalTimeDisplayProps) {
   const [timeData, setTimeData] = useState<TimeAwarenessData | null>(null)
 
   useEffect(() => {
     // Initial calculation
     const updateTime = () => {
-      const data = getTimeAwareness(sunrise, sunset)
+      const data = getTimeAwareness(sunrise, sunset, timezone)
       setTimeData(data)
     }
 
@@ -32,7 +34,7 @@ export function LocalTimeDisplay({
     const interval = setInterval(updateTime, 60000)
 
     return () => clearInterval(interval)
-  }, [sunrise, sunset])
+  }, [sunrise, sunset, timezone])
 
   if (!timeData) return null
 
@@ -50,27 +52,27 @@ export function LocalTimeDisplay({
         {/* Location and time */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <MapPin className="w-4 h-4 text-white/60" />
-            <span className="text-white/80 text-sm">{locationName}</span>
+            <MapPin className="w-4 h-4 text-white/70" />
+            <span className="text-white text-sm font-medium text-shadow-sm">{locationName}</span>
           </div>
 
           <div className="flex items-baseline gap-3">
             <Clock
               className={cn(
                 "w-6 h-6",
-                timeData.isDayTime ? "text-amber-400" : "text-indigo-400"
+                timeData.isDayTime ? "text-amber-400 icon-glow-amber" : "text-indigo-400 icon-glow-blue"
               )}
             />
             <div>
               <p
                 className={cn(
-                  "text-3xl font-bold",
-                  timeData.isDayTime ? "text-amber-300" : "text-indigo-300"
+                  "text-3xl font-bold text-shadow",
+                  timeData.isDayTime ? "text-amber-200" : "text-indigo-200"
                 )}
               >
                 {timeData.localTime}
               </p>
-              <p className="text-white/60 text-xs mt-1">Hora local</p>
+              <p className="text-white/70 text-xs mt-1">Hora local</p>
             </div>
           </div>
         </div>
@@ -106,4 +108,5 @@ export function LocalTimeDisplay({
     </GlassCard>
   )
 }
+
 

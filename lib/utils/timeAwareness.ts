@@ -2,8 +2,8 @@
  * Time awareness utilities for day/night detection and timezone handling
  */
 
-import { parseISO, format, addMinutes } from "date-fns"
-import { formatInTimeZone, toZonedTime } from "date-fns-tz"
+import { parseISO, format } from "date-fns"
+import { formatInTimeZone, toZonedTime, fromZonedTime } from "date-fns-tz"
 
 export interface TimeAwarenessData {
   isDayTime: boolean
@@ -16,147 +16,118 @@ export interface TimeAwarenessData {
 }
 
 /**
+ * Parse an ISO string that may or may not have timezone info
+ * If no timezone offset is present, interprets it as being in the specified timezone
+ */
+function parseTimeInTimezone(isoString: string, timezone: string): Date {
+  const hasTimezoneOffset =
+    /[+-]\d{2}:\d{2}$/.test(isoString) || isoString.endsWith("Z")
+
+  if (hasTimezoneOffset) {
+    // Has timezone info, parse directly
+    return parseISO(isoString)
+  }
+
+  // No timezone info - the string represents a time in the target timezone
+  // Use fromZonedTime to convert from local timezone to UTC
+  return fromZonedTime(isoString, timezone)
+}
+
+/**
+ * Extract time string from ISO format (handles both with and without timezone)
+ */
+function extractTimeFromISO(isoString: string, timezone: string): string {
+  const hasTimezoneOffset =
+    /[+-]\d{2}:\d{2}$/.test(isoString) || isoString.endsWith("Z")
+
+  if (!hasTimezoneOffset) {
+    // The time is already in local format, extract directly
+    const timeMatch = isoString.match(/T(\d{2}:\d{2})/)
+    if (timeMatch) {
+      return timeMatch[1]
+    }
+  }
+
+  // Has timezone info or couldn't extract, format properly
+  const date = parseISO(isoString)
+  return formatInTimeZone(date, timezone, "HH:mm")
+}
+
+/**
  * Determine if it's currently day or night at a location based on sunrise/sunset
- * 
- * @param sunrise - Sunrise time (ISO string with timezone offset)
- * @param sunset - Sunset time (ISO string with timezone offset)
+ * Now uses the IANA timezone for accurate time calculations
+ *
+ * @param sunrise - Sunrise time (ISO string, may be local time without offset)
+ * @param sunset - Sunset time (ISO string, may be local time without offset)
+ * @param timezone - IANA timezone (e.g., "Europe/Madrid")
  * @param currentTime - Optional current time (defaults to now)
  * @returns Object with day/night status and local time information
  */
 export function getTimeAwareness(
   sunrise: string,
   sunset: string,
+  timezone?: string,
   currentTime?: Date
 ): TimeAwarenessData {
   const now = currentTime || new Date()
-  const sunriseDate = parseISO(sunrise)
-  const sunsetDate = parseISO(sunset)
-  
-  // Check if current time is between sunrise and sunset
+  const tz = timezone || "UTC"
+
+  // Parse sunrise/sunset - handle both formats (with and without timezone offset)
+  const sunriseDate = parseTimeInTimezone(sunrise, tz)
+  const sunsetDate = parseTimeInTimezone(sunset, tz)
+
+  // Compare using UTC timestamps
   const isDayTime = now >= sunriseDate && now <= sunsetDate
   const isNightTime = !isDayTime
-  
-  // Extract timezone offset from the ISO string
-  // Format: "2024-01-05T07:30:00+01:00" -> "+01:00" or "-03:00"
-  const offset = extractOffsetMinutesFromISO(sunrise)
-  const timeZone = extractTimezoneFromISO(sunrise) || "UTC"
-  
-  // Calculate local time by applying the offset to UTC
-  // The Date object parsed from ISO string is in UTC, so we add the offset
-  const localTime = getLocalTimeString(now, offset)
-  const localDate = getLocalDateString(now, offset)
-  
-  const sunriseTime = getLocalTimeString(sunriseDate, offset)
-  const sunsetTime = getLocalTimeString(sunsetDate, offset)
-  
+
+  // Format times in the target timezone
+  const localTime = formatInTimeZone(now, tz, "HH:mm")
+  const localDate = formatInTimeZone(now, tz, "EEEE, d MMMM yyyy")
+
+  // Extract sunrise/sunset times
+  const sunriseTime = extractTimeFromISO(sunrise, tz)
+  const sunsetTime = extractTimeFromISO(sunset, tz)
+
   return {
     isDayTime,
     isNightTime,
     localTime,
     localDate,
-    timeZone,
+    timeZone: tz,
     sunriseTime,
     sunsetTime,
   }
 }
 
 /**
- * Extract timezone offset in minutes from an ISO string
- * Example: "2024-01-05T20:25:00-03:00" -> -180 (minutes)
- * Example: "2024-01-05T07:30:00+01:00" -> 60 (minutes)
- */
-function extractOffsetMinutesFromISO(isoString: string): number {
-  // Match timezone offset pattern: +HH:MM or -HH:MM
-  const offsetMatch = isoString.match(/([+-])(\d{2}):(\d{2})$/)
-  if (!offsetMatch) return 0
-  
-  const sign = offsetMatch[1] === '+' ? 1 : -1
-  const hours = parseInt(offsetMatch[2], 10)
-  const minutes = parseInt(offsetMatch[3], 10)
-  
-  return sign * (hours * 60 + minutes)
-}
-
-/**
- * Get local time string by applying offset to a UTC date
- */
-function getLocalTimeString(date: Date, offsetMinutes: number): string {
-  const localDate = addMinutes(date, offsetMinutes)
-  return format(localDate, 'HH:mm')
-}
-
-/**
- * Get local date string by applying offset to a UTC date
- */
-function getLocalDateString(date: Date, offsetMinutes: number): string {
-  const localDate = addMinutes(date, offsetMinutes)
-  return format(localDate, 'EEEE, d MMMM yyyy')
-}
-
-/**
- * Extract IANA timezone from an ISO string with offset
- * Note: This is a simplified version. For production, you'd want a proper
- * timezone database lookup based on coordinates.
- * 
- * @param isoString - ISO string with timezone offset (e.g., "2024-01-05T07:30:00+01:00")
- * @returns IANA timezone string or "UTC"
- */
-function extractTimezoneFromISO(isoString: string): string {
-  // For now, we'll use UTC as the base and rely on the ISO string's offset
-  // A more robust solution would use the coordinates to lookup the IANA timezone
-  // via a library like @vvo/tzdb or similar
-  
-  // Extract offset from ISO string
-  const offsetMatch = isoString.match(/([+-]\d{2}:\d{2})$/)
-  if (!offsetMatch) return "UTC"
-  
-  // For simplicity, return UTC. The formatInTimeZone will handle the offset
-  // when we pass the Date object created from the ISO string
-  return "UTC"
-}
-
-/**
- * Get timezone from coordinates using a simple lookup
- * This is a placeholder - in production you'd use a proper timezone lookup library
- * 
- * @param lat - Latitude
- * @param lon - Longitude
- * @returns IANA timezone string
- */
-export function getTimezoneFromCoordinates(lat: number, lon: number): string {
-  // Simplified timezone detection based on longitude
-  // This is NOT accurate for production use - use a proper library like geo-tz
-  
-  // Rough approximation: each 15 degrees of longitude = 1 hour
-  const offset = Math.round(lon / 15)
-  
-  // Common timezone mappings (very simplified)
-  const timezoneMap: Record<number, string> = {
-    "-8": "America/Los_Angeles",
-    "-7": "America/Denver",
-    "-6": "America/Chicago",
-    "-5": "America/New_York",
-    "-4": "America/Caracas",
-    "-3": "America/Sao_Paulo",
-    "0": "Europe/London",
-    "1": "Europe/Madrid",
-    "2": "Europe/Athens",
-    "3": "Europe/Moscow",
-    "8": "Asia/Shanghai",
-    "9": "Asia/Tokyo",
-    "10": "Australia/Sydney",
-  }
-  
-  return timezoneMap[offset] || "UTC"
-}
-
-/**
- * Determine background image based on time of day
- * 
+ * Determine background based on time of day
+ * Returns CSS gradient for beautiful, consistent backgrounds
+ *
  * @param isDayTime - Whether it's currently daytime
- * @returns Path to background image
+ * @returns CSS background value
  */
 export function getBackgroundImage(isDayTime: boolean): string {
-  return isDayTime ? "/weather.avif" : "/night.avif"
+  if (isDayTime) {
+    // Beautiful day sky gradient with subtle clouds effect
+    return `
+      linear-gradient(180deg, 
+        #1e3a5f 0%, 
+        #2d5a87 15%,
+        #4a90b8 35%,
+        #7ab8d4 55%,
+        #a8d4e8 75%,
+        #d4e8f2 100%
+      )
+    `
+  }
+  // Beautiful night sky with stars feel
+  return `
+    linear-gradient(180deg,
+      #0a0a1a 0%,
+      #0f1628 20%,
+      #1a2744 45%,
+      #1e3a5f 70%,
+      #243b55 100%
+    )
+  `
 }
-

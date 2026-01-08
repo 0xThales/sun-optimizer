@@ -30,6 +30,8 @@ export interface SunTimes {
   sunset: string // ISO string
   solarNoon: string // ISO string
   dayLength: number // seconds
+  timezone: string // IANA timezone e.g. "Europe/Madrid"
+  utcOffsetSeconds: number // Offset from UTC in seconds
 }
 
 // Weather data combined
@@ -83,4 +85,5 @@ export interface GeolocationState {
   error: string | null
   coordinates: Coordinates | null
 }
+
 

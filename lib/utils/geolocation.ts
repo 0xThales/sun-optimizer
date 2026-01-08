@@ -49,3 +49,5 @@ export function formatCoordinates(coords: Coordinates): string {
     coords.lon
   ).toFixed(4)}°${lonDir}`
 }
+
+
