@@ -8,6 +8,7 @@ import { OptimalTimeCard } from "@/components/OptimalTimeCard"
 import { UVChart } from "@/components/UVChart"
 import { SunTimes } from "@/components/SunTimes"
 import { LocalTimeDisplay } from "@/components/LocalTimeDisplay"
+import { SunCompass } from "@/components/SunCompass"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { GlassButton } from "@/components/ui/GlassButton"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
@@ -294,6 +295,13 @@ export default function Home() {
               {/* Sun Times */}
               <SunTimes sunTimes={weatherData.sunTimes} />
             </div>
+
+            {/* Sun Compass */}
+            <SunCompass
+              lat={weatherData.location.lat}
+              lon={weatherData.location.lon}
+              timezone={weatherData.sunTimes.timezone}
+            />
 
             {/* UV Chart - Full width */}
             <UVChart

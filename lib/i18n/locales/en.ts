@@ -65,6 +65,21 @@ export const en = {
     veryLowUVToday: "Very low UV today (max {uv}). Maximize your time in the sun.",
     highUVToday: "High UV today (peak {uv}). Avoid central hours.",
     extremeUVToday: "Extreme UV today (peak {uv}). Only early in the morning.",
-  }
+  },
+  compass: {
+    title: "Sun Compass",
+    sunDirection: "Sun direction",
+    elevation: "Elevation",
+    azimuth: "Azimuth",
+    north: "N",
+    south: "S",
+    east: "E",
+    west: "W",
+    sunAboveHorizon: "Sun above horizon",
+    sunBelowHorizon: "Sun below horizon",
+    enableCompass: "Enable live compass",
+    live: "LIVE",
+    shadowTip: "Dashed line shows shadow direction",
+  },
 };
 

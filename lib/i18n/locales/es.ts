@@ -65,6 +65,21 @@ export const es = {
     veryLowUVToday: "UV muy bajo hoy (máx {uv}). Maximiza tu tiempo al sol.",
     highUVToday: "UV alto hoy (pico {uv}). Evita horas centrales.",
     extremeUVToday: "UV extremo hoy (pico {uv}). Solo temprano en la mañana.",
-  }
+  },
+  compass: {
+    title: "Brújula Solar",
+    sunDirection: "Dirección del sol",
+    elevation: "Elevación",
+    azimuth: "Azimut",
+    north: "N",
+    south: "S",
+    east: "E",
+    west: "O",
+    sunAboveHorizon: "Sol sobre el horizonte",
+    sunBelowHorizon: "Sol bajo el horizonte",
+    enableCompass: "Activar brújula en vivo",
+    live: "VIVO",
+    shadowTip: "La línea punteada indica la dirección de las sombras",
+  },
 };
 
