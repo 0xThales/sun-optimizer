@@ -41,13 +41,17 @@ export function extractHourFromISOString(isoString: string): number {
  * @param timezone - Optional IANA timezone (e.g., "Europe/Madrid")
  * @returns Formatted time string in HH:mm format (e.g., "14:30")
  */
-export function formatTime(dateInput: Date | string, timezone?: string): string {
+export function formatTime(
+  dateInput: Date | string,
+  timezone?: string
+): string {
   if (typeof dateInput === "string") {
     // Check if the ISO string already includes the time part with HH:mm
     // Open-Meteo returns strings like "2024-01-08T05:50" which are already in local time
     // If no timezone offset is present and we have a timezone, we should extract the time directly
-    const hasTimezoneOffset = /[+-]\d{2}:\d{2}$/.test(dateInput) || dateInput.endsWith('Z')
-    
+    const hasTimezoneOffset =
+      /[+-]\d{2}:\d{2}$/.test(dateInput) || dateInput.endsWith("Z")
+
     if (!hasTimezoneOffset && timezone) {
       // The time is already in local format, extract it directly
       const timeMatch = dateInput.match(/T(\d{2}:\d{2})/)
@@ -55,7 +59,7 @@ export function formatTime(dateInput: Date | string, timezone?: string): string 
         return timeMatch[1]
       }
     }
-    
+
     // Parse and format with timezone
     const date = parseISO(dateInput)
     if (timezone) {
@@ -63,7 +67,7 @@ export function formatTime(dateInput: Date | string, timezone?: string): string 
     }
     return format(date, "HH:mm")
   }
-  
+
   // Date object
   if (timezone) {
     return formatInTimeZone(dateInput, timezone, "HH:mm")
@@ -166,4 +170,3 @@ export function isTimeInRange(
 export function parseISOString(isoString: string): Date {
   return parseISO(isoString)
 }
-

@@ -73,22 +73,24 @@ sun_project/
 
 ## 🌡️ Niveles de UV
 
-| UV Index | Nivel | Color | SPF Recomendado |
-|----------|-------|-------|-----------------|
-| 0-2 | Bajo | 🟢 Verde | 15 |
-| 3-5 | Moderado | 🟡 Amarillo | 30 |
-| 6-7 | Alto | 🟠 Naranja | 30+ |
-| 8-10 | Muy Alto | 🔴 Rojo | 50 |
-| 11+ | Extremo | 🟣 Púrpura | 50+ |
+| UV Index | Nivel    | Color       | SPF Recomendado |
+| -------- | -------- | ----------- | --------------- |
+| 0-2      | Bajo     | 🟢 Verde    | 15              |
+| 3-5      | Moderado | 🟡 Amarillo | 30              |
+| 6-7      | Alto     | 🟠 Naranja  | 30+             |
+| 8-10     | Muy Alto | 🔴 Rojo     | 50              |
+| 11+      | Extremo  | 🟣 Púrpura  | 50+             |
 
 ## 📡 APIs Utilizadas
 
 ### Open-Meteo (Predeterminada)
+
 - Gratuita, sin necesidad de API key
 - Datos de UV, temperaturas y horarios solares
 - [Documentación](https://open-meteo.com/en/docs)
 
 ### OpenWeatherMap (Opcional)
+
 Para usar OpenWeatherMap como API primaria, crea un archivo `.env.local`:
 
 ```env
@@ -113,6 +115,3 @@ MIT License - Siéntete libre de usar y modificar este proyecto.
 ---
 
 Hecho con ☀️ por SunOptimizer
-
-
-

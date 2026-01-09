@@ -116,5 +116,3 @@ export interface NormalizedWeatherData {
   timezone: string // IANA timezone e.g. "Europe/Madrid"
   utcOffsetSeconds: number // Offset from UTC in seconds
 }
-
-

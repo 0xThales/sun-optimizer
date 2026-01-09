@@ -1,33 +1,33 @@
-'use client'
+"use client"
 
-import { cn } from '@/lib/utils/cn'
-import { ReactNode } from 'react'
+import { cn } from "@/lib/utils/cn"
+import { ReactNode } from "react"
 
 interface GlassCardProps {
   children: ReactNode
   className?: string
-  variant?: 'primary' | 'secondary' | 'default'
+  variant?: "primary" | "secondary" | "default"
   animate?: boolean
 }
 
-export function GlassCard({ 
-  children, 
-  className, 
-  variant = 'default',
-  animate = true 
+export function GlassCard({
+  children,
+  className,
+  variant = "default",
+  animate = true,
 }: GlassCardProps) {
   const variants = {
-    default: 'glass-card',
-    primary: 'glass-card-primary',
-    secondary: 'glass-card-secondary',
+    default: "glass-card",
+    primary: "glass-card-primary",
+    secondary: "glass-card-secondary",
   }
 
   return (
-    <div 
+    <div
       className={cn(
         variants[variant],
-        animate && 'animate-fade-in',
-        'p-4 sm:p-6',
+        animate && "animate-fade-in",
+        "p-4 sm:p-6",
         className
       )}
     >
@@ -35,6 +35,3 @@ export function GlassCard({
     </div>
   )
 }
-
-
-
